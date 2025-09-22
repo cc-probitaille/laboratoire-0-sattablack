@@ -61,34 +61,56 @@ class App {
 
     // Route pour classement (stats)
     router.get('/stats', (req, res, next) => {
-      res.render('stats',
-        // passer objet au gabarit (template) Pug
-        {
+      try {
+        // Récupérer les joueurs depuis le contrôleur
+        const joueursRaw = JSON.parse(jeuRoutes.controleurJeu.joueurs);
+
+       
+        const joueurs = joueursRaw as Array<any>;
+
+        // Ajouter la propriété ratio à chaque joueur
+        const joueursAvecRatio = joueurs.map(joueur => ({
+          ...joueur,
+          ratio: joueur.lancers === 0 ? 0 : joueur.lancersGagnes / joueur.lancers
+        }));
+
+        // Trier par ratio décroissant
+        joueursAvecRatio.sort((a, b) => b.ratio - a.ratio);
+
+        // Passer le tableau au gabarit Pug
+        res.render('stats', {
           title: `${titreBase}`,
           user: user,
-          // créer nouveau tableau de joueurs qui est trié par ratio
-          joueurs: JSON.parse(jeuRoutes.controleurJeu.joueurs)
+          joueurs: joueursAvecRatio
         });
-    });
-
-    // Route to login
-    router.get('/signin', async function (req, res) {
-      if (user.isAnonymous) {
-        // simuler un login
-        res.render('signin', {
-          title: `${titreBase}`
-        })
-      } else {
-        return res.redirect('/');
+      } catch (error) {
+        req.flash('error', error.message);
+        res.status(500).json({ error: error.toString() });
       }
     });
 
+    
     // Route to login
     router.get('/signout', async function (req, res) {
       // simuler une déconnexion
       user = { isAnonymous: true };
       return res.redirect('/');
     });
+
+    
+    // Route pour se connecter
+    router.get('/signin', (req, res) => {
+      if (user && user.isAnonymous === false) {
+        // déjà connecté → redirection vers la page principale
+        return res.redirect('/');
+      } else {
+        // pas connecté → afficher signin.pug
+        return res.status(200).render('signin', {
+          title: `${titreBase} - Connexion`,
+          user: user
+        });
+      }
+     });
 
 
     this.expressApp.use('/', router);  // routage de base

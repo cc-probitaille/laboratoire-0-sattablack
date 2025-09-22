@@ -61,9 +61,10 @@ export class JeuRouter {
       const resultat = this._controleurJeu.jouer(nom);
       const resultatObj = JSON.parse(resultat);
       // flash un message selon le résultat
-      const key = resultatObj.somme == 7 ? 'win' : 'info';
-      req.flash(key,
-        `Résultat pour ${nom}: ${resultatObj.v1} + ${resultatObj.v2} = ${resultatObj.somme}`);
+      const key = resultatObj.somme  <= 10 ? 'win' : 'info';
+        req.flash(key, 
+          `Résultat pour ${nom}: ${resultatObj.v1} + ${resultatObj.v2} + ${resultatObj.v3} = ${resultatObj.somme}`
+        );
       res.status(200)
         .send({
           message: 'Success',
@@ -106,6 +107,25 @@ export class JeuRouter {
     }
   }
 
+    /**
+    * Redémarrer le jeu
+    */
+    public redemarrerJeu(req: Request, res: Response, next: NextFunction) {
+      try {
+        // Appeler l'opération système dans le contrôleur GRASP
+        this._controleurJeu.redemarrerJeu();
+
+        // Afficher un message à l'utilisateur
+        req.flash?.('info', 'L’application redémarre');
+
+        // Retour JSON attendu par les tests
+        res.status(200).json({ message: 'Success' });
+
+      } catch (error) {
+        this._errorCode500(error, req, res);
+      }
+    }
+
   /**
      * Take each handler, and attach to one of the Express.Router's
      * endpoints.
@@ -114,6 +134,8 @@ export class JeuRouter {
     this._router.post('/demarrerJeu', this.demarrerJeu.bind(this)); // pour .bind voir https://stackoverflow.com/a/15605064/1168342
     this._router.get('/jouer/:nom', this.jouer.bind(this)); // pour .bind voir https://stackoverflow.com/a/15605064/1168342
     this._router.get('/terminerJeu/:nom', this.terminerJeu.bind(this)); // pour .bind voir https://stackoverflow.com/a/15605064/1168342
+    this._router.get('/redemarrerJeu', this.redemarrerJeu.bind(this));
+
   }
 
 }
